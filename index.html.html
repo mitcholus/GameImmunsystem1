@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bio-Defense: Angeborene Immunabwehr</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-color: #1e293b;
+            --accent-color: #38bdf8;
+            --success-color: #22c55e;
+            --danger-color: #ef4444;
+            --text-main: #f1f5f9;
+            --text-dim: #94a3b8;
+            --font-mono: 'Courier New', monospace;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .interface {
+            width: 100%;
+            max-width: 900px;
+            background-color: var(--panel-color);
+            margin: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #334155;
+        }
+
+        /* Header Area */
+        header {
+            background-color: #0f172a;
+            padding: 15px 20px;
+            border-bottom: 2px solid var(--accent-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .brand { font-family: var(--font-mono); font-weight: bold; color: var(--accent-color); letter-spacing: 2px; }
+        .status-bar { font-size: 0.9rem; color: var(--text-dim); }
+
+        /* Main Content Area */
+        main { padding: 30px; flex-grow: 1; position: relative; }
+        
+        .screen { display: none; animation: fadeIn 0.4s ease-in-out; }
+        .screen.active { display: block; }
+
+        h2 { border-bottom: 1px solid #334155; padding-bottom: 10px; color: var(--accent-color); margin-top: 0; }
+        .intro-text { font-size: 1.1rem; line-height: 1.6; color: #cbd5e1; }
+
+        /* Interactive Elements */
+        .btn {
+            background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(14, 165, 233, 0.4); }
+        .btn:disabled { background: #475569; cursor: not-allowed; transform: none; box-shadow: none; }
+        .btn-outline { background: transparent; border: 1px solid var(--accent-color); color: var(--accent-color); }
+
+        /* Feedback Box */
+        .feedback-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            background: rgba(0,0,0,0.3);
+            border-left: 4px solid #666;
+            display: none;
+        }
+        .feedback-box.success { border-color: var(--success-color); background: rgba(34, 197, 94, 0.1); }
+        .feedback-box.error { border-color: var(--danger-color); background: rgba(239, 68, 68, 0.1); }
+
+        /* Level 1: Patient Files */
+        .patient-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+        .patient-card {
+            background: #334155; padding: 15px; border-radius: 6px; cursor: pointer; border: 2px solid transparent; transition: 0.2s;
+        }
+        .patient-card:hover { border-color: var(--accent-color); }
+        .patient-card.selected { border-color: var(--success-color); background: #1e293b; }
+        .patient-icon { font-size: 2rem; margin-bottom: 10px; display: block; }
+
+        /* Level 2: Matrix Puzzle */
+        .matrix-container { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 20px; }
+        .drag-source { flex: 1; min-width: 200px; display: flex; flex-direction: column; gap: 10px; }
+        .drop-target { flex: 2; min-width: 300px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        
+        .draggable-item { 
+            background: #475569; padding: 10px; border-radius: 4px; cursor: pointer; user-select: none; border: 1px solid #64748b;
+        }
+        .draggable-item.selected { border-color: var(--accent-color); background: #334155; box-shadow: 0 0 10px var(--accent-color); }
+        
+        .drop-zone {
+            background: rgba(0,0,0,0.2); border: 2px dashed #475569; padding: 15px; min-height: 60px; border-radius: 4px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;
+        }
+        .drop-zone span { font-size: 0.8rem; color: #64748b; pointer-events: none; }
+
+        /* Level 3: Phagozytose Game */
+        #phago-canvas { background: #000; border: 2px solid #333; margin: 20px auto; display: block; cursor: crosshair; }
+        .overlay-stats { text-align: center; font-family: var(--font-mono); color: var(--success-color); }
+
+        /* Level 4: Sorting */
+        .sort-list { list-style: none; padding: 0; }
+        .sort-item {
+            background: #334155; margin-bottom: 8px; padding: 12px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center;
+        }
+        .sort-controls button { background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem; }
+        .sort-controls button:hover { color: var(--accent-color); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="interface">
+    <header>
+        <div class="brand">🛡️ BIO-DEFENSE V4.0</div>
+        <div class="status-bar">SYSTEM STATUS: <span id="system-status">ONLINE</span> | LEVEL: <span id="level-indicator">1/4</span></div>
+    </header>
+
+    <main>
+        <!-- START -->
+        <div id="screen-intro" class="screen active">
+            <h1>Willkommen im CDC-Kontrollzentrum</h1>
+            <p class="intro-text">
+                Agent, wir haben einen unbekannten Ausbruch am Gymnasium BW. Mehrere Schüler zeigen unterschiedliche Symptome.
+                Ihre Aufgabe ist es, die <strong>Angeborene Immunabwehr</strong> zu analysieren, Infektionswege zu identifizieren und die körpereigene Abwehr zu unterstützen.
+            </p>
+            <div style="background: #334155; padding: 15px; border-radius: 5px; border-left: 4px solid var(--accent-color);">
+                <strong>Missionsziele:</strong>
+                <ul style="margin: 5px 0 0 20px; padding: 0;">
+                    <li>Analyse von Infektionswegen (Vektoren vs. Kontakt).</li>
+                    <li>Überprüfung der Barriere-Funktionen (Chemisch/Mechanisch/Biologisch).</li>
+                    <li>Steuerung der unspezifischen zellulären Abwehr (Phagozytose).</li>
+                    <li>Rekonstruktion des Entzündungsverlaufs.</li>
+                </ul>
+            </div>
+            <button class="btn" onclick="game.startLevel(1)">>> MISSION STARTEN</button>
+        </div>
+
+        <!-- LEVEL 1: DIAGNOSE -->
+        <div id="screen-l1" class="screen">
+            <h2>Level 1: Infektionswege-Analyse</h2>
+            <p>Drei Patienten wurden isoliert. Analysieren Sie die Patientendaten und weisen Sie den korrekten <strong>Infektionsweg</strong> zu.</p>
+            
+            <div class="patient-grid">
+                <div class="patient-card" onclick="game.selectPatient(0)">
+                    <span class="patient-icon">🩹</span>
+                    <strong>Patient A (Lukas)</strong>
+                    <p style="font-size:0.9rem; color:#aaa;">Verletzte sich beim Fußball am Knie. Wunde wurde nicht gesäubert. Rötung und Eiterbildung.</p>
+                </div>
+                <div class="patient-card" onclick="game.selectPatient(1)">
+                    <span class="patient-icon">🦟</span>
+                    <strong>Patient B (Sarah)</strong>
+                    <p style="font-size:0.9rem; color:#aaa;">War im Wald. Runder roter Fleck am Bein (Erythema migrans). Gliederschmerzen.</p>
+                </div>
+                <div class="patient-card" onclick="game.selectPatient(2)">
+                    <span class="patient-icon">🥪</span>
+                    <strong>Patient C (Tom)</strong>
+                    <p style="font-size:0.9rem; color:#aaa;">Aß ein Salamibrot, das 3 Tage im Spind lag. Übelkeit, Durchfall nach 4 Stunden.</p>
+                </div>
+            </div>
+
+            <div id="diagnosis-panel" style="margin-top:20px; display:none;">
+                <p><strong>Diagnose für Patient <span id="current-patient-name"></span>:</strong> Wie drang der Erreger ein?</p>
+                <button class="btn btn-outline" onclick="game.checkDiagnosis('vektor')">Vektorübertragung (Insektenstich)</button>
+                <button class="btn btn-outline" onclick="game.checkDiagnosis('oral')">Fäkal-Oral / Nahrungsmittel</button>
+                <button class="btn btn-outline" onclick="game.checkDiagnosis('wunde')">Parenteral (Wundinfektion)</button>
+                <button class="btn btn-outline" onclick="game.checkDiagnosis('troepfchen')">Aerogen (Tröpfchen)</button>
+            </div>
+
+            <div id="feedback-l1" class="feedback-box"></div>
+            <button id="btn-next-l2" class="btn" style="display:none" onclick="game.startLevel(2)">>> NÄCHSTES LEVEL</button>
+        </div>
+
+        <!-- LEVEL 2: BARRIEREN -->
+        <div id="screen-l2" class="screen">
+            <h2>Level 2: Die erste Verteidigungslinie</h2>
+            <p>Der Körper versucht, das Eindringen zu verhindern. Ordnen Sie die Schutzmechanismen den Organen und der korrekten <strong>Art der Barriere</strong> zu.</p>
+            <p style="font-size: 0.9rem; color: #aaa;">Klicken Sie links auf ein Element und dann rechts auf das passende Feld.</p>
+
+            <div class="matrix-container">
+                <div class="drag-source" id="barrier-source">
+                    <!-- Items generated by JS -->
+                </div>
+                <div class="drop-target" id="barrier-target">
+                    <!-- Zones generated by JS -->
+                </div>
+            </div>
+
+            <div id="feedback-l2" class="feedback-box"></div>
+            <button id="btn-next-l3" class="btn" style="display:none" onclick="game.startLevel(3)">>> NÄCHSTES LEVEL</button>
+        </div>
+
+        <!-- LEVEL 3: PHAGOZYTOSE SIMULATION -->
+        <div id="screen-l3" class="screen">
+            <h2>Level 3: Unspezifische Zellabwehr</h2>
+            <p>Die Barrieren wurden durchbrochen! Bakterien sind im Gewebe. Die <strong>Makrophagen (Fresszellen)</strong> müssen aktiviert werden.</p>
+            <p><strong>Aufgabe:</strong> Steuern Sie den Makrophagen mit der Maus/Touch. Fressen Sie alle Bakterien (grün), bevor sie sich vermehren. Vermeiden Sie Körperzellen (blau)!</p>
+            
+            <div class="overlay-stats">Virenlast: <span id="virus-count">0</span>%</div>
+            <canvas id="phago-canvas" width="600" height="300"></canvas>
+            
+            <button id="btn-start-game" class="btn" onclick="miniGame.start()">>> SIMULATION STARTEN</button>
+            
+            <div id="feedback-l3" class="feedback-box"></div>
+            <button id="btn-next-l4" class="btn" style="display:none" onclick="game.startLevel(4)">>> NÄCHSTES LEVEL</button>
+        </div>
+
+        <!-- LEVEL 4: ENTZÜNDUNGSREAKTION -->
+        <div id="screen-l4" class="screen">
+            <h2>Level 4: Die Entzündungsreaktion</h2>
+            <p>Um die Infektion lokal zu begrenzen, reagiert der Körper mit einer Entzündung. Bringen Sie den Ablauf in die logisch korrekte <strong>biologische Reihenfolge</strong>.</p>
+            
+            <ul class="sort-list" id="sort-container">
+                <!-- Items generated by JS -->
+            </ul>
+
+            <button class="btn btn-outline" onclick="game.checkOrder()">Überprüfen</button>
+            <div id="feedback-l4" class="feedback-box"></div>
+            <button id="btn-finish" class="btn" style="display:none" onclick="game.finish()">>> MISSION ABSCHLIESSEN</button>
+        </div>
+
+        <!-- END SCREEN -->
+        <div id="screen-end" class="screen">
+            <h1>Mission Erfolgreich!</h1>
+            <p class="intro-text">
+                Hervorragende Arbeit. Sie haben das Prinzip der angeborenen Immunabwehr verstanden:
+                <br>1. Barrieren verhindern Eindringen.
+                <br>2. Bei Durchbruch greifen Fresszellen unspezifisch an.
+                <br>3. Entzündungen helfen, Abwehrzellen zum Ort des Geschehens zu bringen.
+            </p>
+            <p>Falls die angeborene Abwehr versagt, muss das <em>adaptive (spezifische)</em> Immunsystem übernehmen – aber das ist Thema der nächsten Mission.</p>
+            
+            <div style="background: white; color:black; padding:20px; border-radius:5px; margin-top:20px;">
+                <h3>📄 Missions-Logbuch (Lernerfolgskontrolle)</h3>
+                <p>Laden Sie hier die Zusammenfassung aller gelernten Inhalte herunter.</p>
+                <button class="btn" style="background:#222; color:white;" onclick="game.downloadReport()">💾 LOGBUCH SPEICHERN (.txt)</button>
+            </div>
+        </div>
+
+    </main>
+</div>
+
+<script>
+/* 
+   GAME ENGINE & LOGIC 
+*/
+
+const game = {
+    state: {
+        level: 0,
+        patientSolved: [false, false, false],
+        barriersSolved: 0,
+        timelineCorrect: false,
+        knowledgeLog: [] // Stores text for the final download
+    },
+
+    init: function() {
+        // Setup Barriers Level
+        this.setupBarriers();
+        // Setup Timeline Level
+        this.setupTimeline();
+    },
+
+    startLevel: function(lvl) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(`screen-${lvl === 0 ? 'intro' : 'l'+lvl}`).classList.add('active');
+        document.getElementById('level-indicator').innerText = lvl + "/4";
+        this.state.level = lvl;
+    },
+
+    /* --- LEVEL 1 LOGIC --- */
+    currentPatient: null,
+    
+    selectPatient: function(index) {
+        if(this.state.patientSolved[index]) return;
+        this.currentPatient = index;
+        
+        // Visual selection
+        document.querySelectorAll('.patient-card').forEach((c, i) => {
+            c.classList.remove('selected');
+            if(i === index) c.classList.add('selected');
+        });
+
+        const names = ["Lukas (Wunde)", "Sarah (Zeckenstich)", "Tom (Lebensmittel)"];
+        document.getElementById('current-patient-name').innerText = names[index];
+        document.getElementById('diagnosis-panel').style.display = 'block';
+        document.getElementById('feedback-l1').style.display = 'none';
+    },
+
+    checkDiagnosis: function(diagnosis) {
+        if(this.currentPatient === null) return;
+        
+        const correct = [
+            'wunde',    // Lukas
+            'vektor',   // Sarah
+            'oral'      // Tom
+        ];
+        
+        const explanations = [
+            "KORREKT. Die Hautbarriere wurde mechanisch durchbrochen. Bakterien drangen direkt ins Gewebe ein.",
+            "KORREKT. Die Zecke ist ein Vektor, der Borrelien direkt in die Blutbahn/Gewebe überträgt und Hautbarrieren umgeht.",
+            "KORREKT. Magen-Darm-Trakt. Die Magensäure war eventuell nicht ausreichend oder Erreger waren säureresistent."
+        ];
+
+        const fb = document.getElementById('feedback-l1');
+        fb.style.display = 'block';
+
+        if(diagnosis === correct[this.currentPatient]) {
+            fb.className = 'feedback-box success';
+            fb.innerHTML = explanations[this.currentPatient];
+            this.state.patientSolved[this.currentPatient] = true;
+            this.state.knowledgeLog.push(`Infektionsweg Patient ${this.currentPatient+1}: ${explanations[this.currentPatient]}`);
+            
+            // Check if all solved
+            if(this.state.patientSolved.every(Boolean)) {
+                document.getElementById('diagnosis-panel').style.display = 'none';
+                document.getElementById('btn-next-l2').style.display = 'inline-block';
+            } else {
+                // Reset selection to force next pick
+                this.currentPatient = null;
+                document.getElementById('diagnosis-panel').style.display = 'none';
+            }
+        } else {
+            fb.className = 'feedback-box error';
+            fb.innerHTML = "FEHLERHAFTE ANALYSE. Überdenken Sie: War ein Tier beteiligt? War die Haut offen? Wurde etwas gegessen?";
+        }
+    },
+
+    /* --- LEVEL 2 LOGIC --- */
+    selectedBarrierItem: null,
+    
+    setupBarriers: function() {
+        const items = [
+            { id: 'b1', name: 'Salzsäure (pH 1-2)', target: 'zone-chem', info: 'Magen: Chemische Barriere tötet fast alles ab.' },
+            { id: 'b2', name: 'Hornschicht & Säureschutzmantel', target: 'zone-mech-chem', info: 'Haut: Kombination aus mechanisch (fest) und chemisch (sauer).' },
+            { id: 'b3', name: 'Flimmerhärchen & Schleim', target: 'zone-mech', info: 'Atemwege: Mechanischer Abtransport (mukoziliäre Clearance).' },
+            { id: 'b4', name: 'Lysozym (Enzym)', target: 'zone-chem-eye', info: 'Augen/Mund: Enzym spaltet Bakterienwände.' },
+            { id: 'b5', name: 'Symbiotische Bakterien', target: 'zone-bio', info: 'Darm/Haut: "Gute" Bakterien verdrängen "böse" (Konkurrenz).' }
+        ];
+        
+        const zones = [
+            { id: 'zone-chem', label: 'Magen (Chemisch)' },
+            { id: 'zone-mech-chem', label: 'Haut (Mech/Chem)' },
+            { id: 'zone-mech', label: 'Luftröhre (Mechanisch)' },
+            { id: 'zone-chem-eye', label: 'Tränen/Speichel (Chemisch)' },
+            { id: 'zone-bio', label: 'Darmflora (Biologisch)' }
+        ];
+
+        // Render Items (Random order)
+        items.sort(() => Math.random() - 0.5);
+        const sourceDiv = document.getElementById('barrier-source');
+        items.forEach(item => {
+            let div = document.createElement('div');
+            div.className = 'draggable-item';
+            div.innerText = item.name;
+            div.dataset.id = item.id;
+            div.dataset.target = item.target;
+            div.dataset.info = item.info;
+            div.onclick = () => {
+                document.querySelectorAll('.draggable-item').forEach(d => d.classList.remove('selected'));
+                div.classList.add('selected');
+                game.selectedBarrierItem = div;
+            };
+            sourceDiv.appendChild(div);
+        });
+
+        // Render Zones
+        const targetDiv = document.getElementById('barrier-target');
+        zones.forEach(zone => {
+            let div = document.createElement('div');
+            div.className = 'drop-zone';
+            div.id = zone.id;
+            div.innerHTML = `<span>${zone.label}</span>`;
+            div.onclick = () => game.checkBarrierMatch(zone.id);
+            targetDiv.appendChild(div);
+        });
+    },
+
+    checkBarrierMatch: function(zoneId) {
+        if(!this.selectedBarrierItem) return;
+
+        const fb = document.getElementById('feedback-l2');
+        fb.style.display = 'block';
+
+        if(this.selectedBarrierItem.dataset.target === zoneId) {
+            // Correct
+            const zone = document.getElementById(zoneId);
+            zone.style.borderColor = 'var(--success-color)';
+            zone.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+            zone.innerHTML = `<strong>${this.selectedBarrierItem.innerText}</strong><br><small>Aktiviert</small>`;
+            
+            this.state.knowledgeLog.push(`Barriere: ${this.selectedBarrierItem.dataset.info}`);
+            this.selectedBarrierItem.remove();
+            this.selectedBarrierItem = null;
+            this.state.barriersSolved++;
+            
+            fb.className = 'feedback-box success';
+            fb.innerHTML = "System verbunden. Barriere aktiv.";
+
+            if(this.state.barriersSolved === 5) {
+                document.getElementById('btn-next-l3').style.display = 'inline-block';
+                fb.innerHTML = "ALLE BARRIEREN AKTIV. Exzellente Arbeit.";
+            }
+        } else {
+            fb.className = 'feedback-box error';
+            fb.innerHTML = "FEHLER: Dieser Schutzmechanismus gehört nicht zu diesem Organ oder Kategorie.";
+        }
+    },
+
+    /* --- LEVEL 4 LOGIC (Sorting) --- */
+    timelineItems: [
+        { id: 1, text: "Verletzung: Bakterien dringen in das Gewebe ein." },
+        { id: 2, text: "Signal: Geschädigte Zellen senden Botenstoffe (Lockstoffe) aus." },
+        { id: 3, text: "Reaktion: Blutgefäße weiten sich (Rötung/Wärme)." },
+        { id: 4, text: "Durchlässigkeit: Gefäßwände werden durchlässig, Flüssigkeit tritt aus (Schwellung)." },
+        { id: 5, text: "Angriff: Makrophagen wandern aus dem Blut zum Erreger." },
+        { id: 6, text: "Phagozytose: Fresszellen umschließen und verdauen die Bakterien (Eiterbildung)." }
+    ],
+
+    setupTimeline: function() {
+        // Shuffle
+        let shuffled = [...this.timelineItems].sort(() => Math.random() - 0.5);
+        const ul = document.getElementById('sort-container');
+        
+        shuffled.forEach(item => {
+            let li = document.createElement('li');
+            li.className = 'sort-item';
+            li.dataset.id = item.id;
+            li.innerHTML = `
+                <span>${item.text}</span>
+                <div class="sort-controls">
+                    <button onclick="game.moveItem(this, -1)">▲</button>
+                    <button onclick="game.moveItem(this, 1)">▼</button>
+                </div>
+            `;
+            ul.appendChild(li);
+        });
+    },
+
+    moveItem: function(btn, dir) {
+        const li = btn.closest('li');
+        const ul = li.parentNode;
+        if(dir === -1 && li.previousElementSibling) {
+            ul.insertBefore(li, li.previousElementSibling);
+        } else if (dir === 1 && li.nextElementSibling) {
+            ul.insertBefore(li.nextElementSibling, li);
+        }
+    },
+
+    checkOrder: function() {
+        const currentOrder = Array.from(document.querySelectorAll('#sort-container li')).map(li => parseInt(li.dataset.id));
+        const correctOrder = [1, 2, 3, 4, 5, 6];
+        
+        const fb = document.getElementById('feedback-l4');
+        fb.style.display = 'block';
+
+        if(JSON.stringify(currentOrder) === JSON.stringify(correctOrder)) {
+            fb.className = 'feedback-box success';
+            fb.innerHTML = "ABLAUF KORREKT. Die Entzündungsreaktion wurde erfolgreich rekonstruiert.";
+            document.getElementById('btn-finish').style.display = 'inline-block';
+            this.state.knowledgeLog.push("Entzündungsreaktion: Verletzung -> Signale -> Durchblutung (Rot/Warm) -> Schwellung -> Einwanderung Fresszellen -> Eiter/Heilung.");
+        } else {
+            fb.className = 'feedback-box error';
+            fb.innerHTML = "LOGIK-FEHLER. Hinweis: Erst muss das Signal gesendet werden, bevor das Blutgefäß reagiert. Erst muss das Gefäß durchlässig werden, bevor die Zellen austreten können.";
+        }
+    },
+
+    finish: function() {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById('screen-end').classList.add('active');
+        document.getElementById('level-indicator').innerText = "COMPLETE";
+    },
+
+    downloadReport: function() {
+        let content = "MISSION LOGBOOK: ANGEBORENE IMMUNABWEHR\n";
+        content += "========================================\n\n";
+        content += "Erkenntnisse aus der Simulation:\n\n";
+        
+        this.state.knowledgeLog.forEach((entry, i) => {
+            content += `${i+1}. ${entry}\n\n`;
+        });
+
+        content += "ZUSAMMENFASSUNG:\n";
+        content += "- Das angeborene System reagiert SOFORT, aber UNSPEZIFISCH.\n";
+        content += "- Wichtige Barrieren: Säuremantel Haut, Magensäure, Schleimhäute.\n";
+        content += "- 2. Linie: Entzündungsreaktion (Rubor, Calor, Tumor, Dolor).\n";
+        content += "- Wichtige Zellen: Makrophagen (Fresszellen).\n";
+        content += "\nGez. Bio-Defense Kommandozentrale";
+
+        const blob = new Blob([content], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Bio_Mission_Logbuch.txt';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+};
+
+/* 
+   MINI GAME ENGINE (Canvas) 
+*/
+const miniGame = {
+    canvas: null,
+    ctx: null,
+    active: false,
+    player: { x: 300, y: 150, r: 20 },
+    targets: [],
+    score: 0,
+    maxScore: 20, // Bacteria count
+
+    start: function() {
+        this.canvas = document.getElementById('phago-canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.active = true;
+        document.getElementById('btn-start-game').style.display = 'none';
+        
+        // Spawn Bacteria
+        for(let i=0; i<this.maxScore; i++) {
+            this.targets.push({
+                x: Math.random() * 580 + 10,
+                y: Math.random() * 280 + 10,
+                r: 5,
+                color: '#22c55e', // Green Bacteria
+                speedX: (Math.random() - 0.5) * 2,
+                speedY: (Math.random() - 0.5) * 2
+            });
+        }
+
+        this.canvas.addEventListener('mousemove', (e) => {
+            const rect = this.canvas.getBoundingClientRect();
+            this.player.x = e.clientX - rect.left;
+            this.player.y = e.clientY - rect.top;
+        });
+        
+        // Touch support
+        this.canvas.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const rect = this.canvas.getBoundingClientRect();
+            this.player.x = e.touches[0].clientX - rect.left;
+            this.player.y = e.touches[0].clientY - rect.top;
+        }, {passive: false});
+
+        this.loop();
+    },
+
+    loop: function() {
+        if(!this.active) return;
+        
+        // Clear
+        this.ctx.fillStyle = '#000';
+        this.ctx.fillRect(0,0,600,300);
+
+        // Draw Player (Macrophage)
+        this.ctx.beginPath();
+        this.ctx.arc(this.player.x, this.player.y, this.player.r, 0, Math.PI*2);
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.fill();
+        this.ctx.strokeStyle = 'white';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        // Draw & Move Targets
+        for(let i=0; i<this.targets.length; i++) {
+            let t = this.targets[i];
+            
+            // Move
+            t.x += t.speedX;
+            t.y += t.speedY;
+            
+            // Bounce
+            if(t.x < 0 || t.x > 600) t.speedX *= -1;
+            if(t.y < 0 || t.y > 300) t.speedY *= -1;
+
+            // Draw
+            this.ctx.beginPath();
+            this.ctx.arc(t.x, t.y, t.r, 0, Math.PI*2);
+            this.ctx.fillStyle = t.color;
+            this.ctx.fill();
+
+            // Collision (Phagocytosis)
+            let dx = this.player.x - t.x;
+            let dy = this.player.y - t.y;
+            let dist = Math.sqrt(dx*dx + dy*dy);
+
+            if(dist < this.player.r + t.r) {
+                this.targets.splice(i, 1);
+                this.score++;
+                document.getElementById('virus-count').innerText = Math.floor((this.score / this.maxScore) * 100);
+            }
+        }
+
+        if(this.targets.length === 0) {
+            this.active = false;
+            const fb = document.getElementById('feedback-l3');
+            fb.style.display = 'block';
+            fb.className = 'feedback-box success';
+            fb.innerHTML = "BEDROHUNG ELIMINIERT. Alle Bakterien phagozytiert.";
+            document.getElementById('btn-next-l4').style.display = 'inline-block';
+            game.state.knowledgeLog.push("Zelluläre Abwehr: Makrophagen erkennen körperfremde Strukturen und phagozytieren (umschließen/verdauen) diese.");
+        } else {
+            requestAnimationFrame(() => this.miniGameLoop());
+        }
+    },
+    
+    // Wrapper to keep context
+    miniGameLoop: function() { this.loop(); }
+};
+
+// Start
+game.init();
+
+</script>
+</body>
+</html>
